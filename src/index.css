@@ -1,0 +1,63 @@
+*{
+  box-sizing: border-box;
+ 
+}
+:root {
+    --hue: 200;
+    --saturation: 50%;
+    --foreground-color: hsl(var(--hue), var(--saturation), 75%);
+    --background-color: hsl(var(--hue), var(--saturation), 20%);
+  }
+  html,body{
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  overflow: hidden;
+  background-color: var(--background-color);
+}
+ 
+.score {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: flex;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 7vh;
+  color: white;
+}
+.score > * {
+  flex-grow: 1;
+  flex-basis: 0;
+  padding: 0 2vh;
+  margin: 1vh 0;
+  opacity: .5;
+}
+
+.score > :first-child {
+  text-align: right;
+  border-right: .5vh solid var(--foreground-color);
+}
+#computer-score{
+  text-align: left;
+}
+
+.App {
+  text-align: center;
+  
+ 
+ 
+}
+
