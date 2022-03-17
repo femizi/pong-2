@@ -2,11 +2,11 @@ import React, { useRef, useEffect, useState } from 'react'
 import Score from './Score'
 
 
-const Canvas = ({ gameStart }) => {
+const Canvas = ({ gameStart, gameStarter }) => {
     let testScore2 = useRef<HTMLDivElement>()
     let testScore1 = useRef<HTMLDivElement>()
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const containerRef = useRef(null)
+    const containerRef = useRef<HTMLDivElement>()
     const VELOCITY_INCREASE = 0.00001
     class Vec {
         y: number;
@@ -64,8 +64,21 @@ const Canvas = ({ gameStart }) => {
 
 
 
-    const draw = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, hue: string, saturation: string) => {
+    const draw = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, hue: string, saturation: string, container) => {
         // ctx.globalAlpha = 0.5;
+        let socket = new WebSocket("ws://localhost:8080/ws")
+        console.log('attempting websockets')
+        socket.onopen = () => {
+            console.log('succesfully connected')
+            socket.send("hi from client")
+
+        }
+        socket.onclose = (e) => {
+            console.log("socket closed connection: *", e)
+        }
+        socket.onerror = (e) => {
+            console.log('socket error', e)
+        }
         const VELOCITY_INCREASE = 0.00001
         const INITIAL_VELOCITY = 0.0045
 
@@ -140,7 +153,7 @@ const Canvas = ({ gameStart }) => {
                 this.ball.vel.x = 0
                 this.ball.vel.y = 0
 
-             
+
 
             }
             start(delta) {
@@ -176,9 +189,9 @@ const Canvas = ({ gameStart }) => {
                         playerId = 0
                     }
                     if (playerId === 0) {
-                        testScore1.current.textContent=( parseInt(testScore1?.current?.textContent) + 1).toString()
+                        testScore1.current.textContent = (parseInt(testScore1?.current?.textContent) + 1).toString()
                     } else if (playerId === 1) {
-                       testScore2.current.textContent= (parseInt(testScore2?.current?.textContent) + 1).toString()
+                        testScore2.current.textContent = (parseInt(testScore2?.current?.textContent) + 1).toString()
                     }
                     this.players[playerId].score++
 
@@ -189,7 +202,7 @@ const Canvas = ({ gameStart }) => {
                 if (this.ball.top < 0 || this.ball.bottom > this._canvas.height) {
                     this.ball.vel.y = -this.ball.vel.y
                 }
-                
+
 
                 this.players.forEach(player => this.collide(player, this.ball));
                 this.draw()
@@ -201,36 +214,35 @@ const Canvas = ({ gameStart }) => {
         const pong = new Pong(canvas)
 
         console.log(pong)
-       
-        canvas.addEventListener('keydown', event =>
-        {
+
+        container.addEventListener('keydown', event => {
             // if up arrow hit & top of paddle is below top header
             if (
-               event.keyCode === 38 
-               && pong.players[1].top > 0
-               
+                event.keyCode === 38
+                && pong.players[1].top > 0
+
             ) {
                 // player 2 paddle up
-                pong.players[1].pos.y -= 20; 
-                
+                pong.players[1].pos.y -= 20;
+
             } else if (
-               event.keyCode === 40 && pong.players[1].bottom < window.innerHeight
-           
+                event.keyCode === 40 && pong.players[1].bottom < window.innerHeight
+
             ) {
-               // if down arrow is hit and at the bottom of the window
-            //    player 2 paddle down
-               pong.players[1].pos.y += 20; 
-               
+                // if down arrow is hit and at the bottom of the window
+                //    player 2 paddle down
+                pong.players[1].pos.y += 20;
 
-            } else if ( event.keyCode === 87 
-                && pong.players[0].top > 0){
-                    pong.players[0].pos.y -= 20; 
 
-            }else if(  event.keyCode === 83 && pong.players[1].bottom < window.innerHeight){
-                pong.players[0].pos.y += 20; 
+            } else if (event.keyCode === 87
+                && pong.players[0].top > 0) {
+                pong.players[0].pos.y -= 20;
+
+            } else if (event.keyCode === 83 && pong.players[1].bottom < window.innerHeight) {
+                pong.players[0].pos.y += 20;
             }
-         });
-        
+        });
+
 
     }
 
@@ -240,15 +252,17 @@ const Canvas = ({ gameStart }) => {
 
         const canvas = canvasRef.current;
         const context = canvas.getContext('2d');
+        const container = containerRef.current
         canvas.width = window.innerWidth
         canvas.height = window.innerHeight
         let hue = "200"
         let saturation = "50%"
-        draw(context, canvas, hue, saturation)
+        draw(context, canvas, hue, saturation, container)
     }, [draw])
 
     return (
         <div className='container' ref={containerRef} >
+            {gameStart ? "" : <div className='instructions'><button onClick={() => gameStarter()}>Start Game</button></div>}
             <div className="score">
                 <div id="player-score" ref={testScore1} >0</div>
                 <div ref={testScore2} id="computer-score">0</div>

@@ -11,8 +11,8 @@ function App() {
 
   return (
     <div className="App">
-      {gameStart?"": <div className='instructions'><button onClick={()=> gameStarter()}>Start Game</button></div>}
-      <Canvas gameStart={gameStart}/>
+      
+      <Canvas gameStart={gameStart} gameStarter={gameStarter}/>
     </div>
   )
 }
