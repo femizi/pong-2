@@ -3,12 +3,14 @@ import Score from './Score'
 
 
 const Canvas = ({ gameStart, gameStarter }) => {
-    let testScore2 = useRef<HTMLDivElement>()
-    let testScore1 = useRef<HTMLDivElement>()
+    const testScore2 = useRef<HTMLDivElement>()
+    const testScore1 = useRef<HTMLDivElement>()
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>()
     const VELOCITY_INCREASE = 0.00001
-    class Vec {
+    
+    
+    class Vector {
         y: number;
         x: number;
         constructor(x = 0, y = 0) {
@@ -25,11 +27,11 @@ const Canvas = ({ gameStart, gameStarter }) => {
         }
     }
     class Rect {
-        pos: Vec;
-        size: Vec;
-        constructor(w, h) {
-            this.pos = new Vec
-            this.size = new Vec(w, h)
+        pos: Vector;
+        size: Vector;
+        constructor(w: number, h: number) {
+            this.pos = new Vector
+            this.size = new Vector(w, h)
         }
         get left() {
             return this.pos.x - this.size.x / 2
@@ -53,11 +55,11 @@ const Canvas = ({ gameStart, gameStarter }) => {
         }
     }
     class Ball extends Rect {
-        vel: Vec;
+        vel: Vector;
 
         constructor() {
             super(10, 10)
-            this.vel = new Vec
+            this.vel = new Vector
         }
     }
 
@@ -66,6 +68,10 @@ const Canvas = ({ gameStart, gameStarter }) => {
 
     const draw = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, hue: string, saturation: string, container) => {
         // ctx.globalAlpha = 0.5;
+        let randomY = 0
+        let randomX = 0
+
+
         let socket = new WebSocket("ws://localhost:8080/ws")
         console.log('attempting websockets')
         socket.onopen = () => {
@@ -73,6 +79,10 @@ const Canvas = ({ gameStart, gameStarter }) => {
             socket.send("hi from client")
 
         }
+        socket.onmessage = function (event) {
+           randomX = parseInt(event.data)
+           randomY = parseInt(event.data)
+          }
         socket.onclose = (e) => {
             console.log("socket closed connection: *", e)
         }
@@ -81,6 +91,7 @@ const Canvas = ({ gameStart, gameStarter }) => {
         }
         const VELOCITY_INCREASE = 0.00001
         const INITIAL_VELOCITY = 0.0045
+        
 
 
         class Pong {
@@ -105,7 +116,7 @@ const Canvas = ({ gameStart, gameStarter }) => {
                 this.players[0].pos.x = 40
                 this.players[1].pos.x = this._canvas.width - 40
                 this.players.forEach(players => {
-                    players.pos.y = this._canvas.height / 2
+                    players.pos.y = 300
 
                 });
                 let lastTime
@@ -123,9 +134,7 @@ const Canvas = ({ gameStart, gameStarter }) => {
 
             }
 
-            randomNumberBetween(min: number, max: number) {
-                return Math.random() * (max - min) + min
-            }
+            
             collide(player: Player, ball: Ball) {
                 if (player.left < ball.right && player.right > ball.left && player.top < ball.bottom && player.bottom > ball.top) {
                     ball.vel.x = - ball.vel.x
@@ -152,6 +161,10 @@ const Canvas = ({ gameStart, gameStarter }) => {
                 this.ball.pos.y = this._canvas.height / 2
                 this.ball.vel.x = 0
                 this.ball.vel.y = 0
+                if (socket.readyState == 1){
+                    socket.send('reset')
+                
+                }
 
 
 
@@ -161,8 +174,8 @@ const Canvas = ({ gameStart, gameStarter }) => {
                     this.velocity = INITIAL_VELOCITY
 
 
-                    this.ball.vel.x = this.velocity * (Math.random() > .5 ? 1 : -1)
-                    this.ball.vel.y = this.velocity * (Math.random() * 2)
+                    this.ball.vel.x = this.velocity * (randomX > .5 ? 1 : -1)
+                    this.ball.vel.y = this.velocity * (randomY * 2)
 
                     let floatHue = parseFloat(hue)
                     let rotatedHue = floatHue + delta * 0.01
@@ -212,6 +225,12 @@ const Canvas = ({ gameStart, gameStarter }) => {
 
 
         const pong = new Pong(canvas)
+        function updatePaddleUp (index:number, value:number){
+            pong.players[index].pos.y -= value
+        }
+        function updatePaddleDown(index:number, value: number){
+            pong.players[index].pos.y += value
+        }
 
         console.log(pong)
 
@@ -223,23 +242,23 @@ const Canvas = ({ gameStart, gameStarter }) => {
 
             ) {
                 // player 2 paddle up
-                pong.players[1].pos.y -= 20;
+                updatePaddleUp(1,20)
 
             } else if (
-                event.keyCode === 40 && pong.players[1].bottom < window.innerHeight
+                event.keyCode === 40 && pong.players[1].bottom < pong._canvas.height
 
             ) {
                 // if down arrow is hit and at the bottom of the window
                 //    player 2 paddle down
-                pong.players[1].pos.y += 20;
+                updatePaddleDown(1,20)
 
 
             } else if (event.keyCode === 87
                 && pong.players[0].top > 0) {
-                pong.players[0].pos.y -= 20;
+                updatePaddleUp(0,20)
 
-            } else if (event.keyCode === 83 && pong.players[1].bottom < window.innerHeight) {
-                pong.players[0].pos.y += 20;
+            } else if (event.keyCode === 83 && pong.players[1].bottom < pong._canvas.height) {
+                updatePaddleDown(0,20)
             }
         });
 
@@ -253,8 +272,8 @@ const Canvas = ({ gameStart, gameStarter }) => {
         const canvas = canvasRef.current;
         const context = canvas.getContext('2d');
         const container = containerRef.current
-        canvas.width = window.innerWidth
-        canvas.height = window.innerHeight
+        canvas.width = 800
+        canvas.height = 600
         let hue = "200"
         let saturation = "50%"
         draw(context, canvas, hue, saturation, container)
