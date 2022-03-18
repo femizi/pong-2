@@ -62,6 +62,10 @@ const Canvas = ({ gameStart, gameStarter }) => {
             this.vel = new Vector
         }
     }
+    let message = {
+        name:'connected',
+        count: 1
+    }
 
 
 
@@ -73,13 +77,19 @@ const Canvas = ({ gameStart, gameStarter }) => {
 
 
         let socket = new WebSocket("ws://localhost:8080/ws")
+        function writeMessage(message: string){
+            if (socket.readyState === 1){
+                socket.send(message)
+            }
+        }
         console.log('attempting websockets')
         socket.onopen = () => {
             console.log('succesfully connected')
-            socket.send("hi from client")
+            socket.send(JSON.stringify(message))
 
         }
         socket.onmessage = function (event) {
+            console.log(event.data)
            randomX = parseInt(event.data)
            randomY = parseInt(event.data)
           }
@@ -119,7 +129,7 @@ const Canvas = ({ gameStart, gameStarter }) => {
                     players.pos.y = 300
 
                 });
-                let lastTime
+                let lastTime: number
                 const callback = (mills?: number) => {
                     if (lastTime) {
                         this.update((mills / lastTime * 1000))
@@ -169,7 +179,7 @@ const Canvas = ({ gameStart, gameStarter }) => {
 
 
             }
-            start(delta) {
+            start(delta: number) {
                 if (this.ball.vel.x === 0 && this.ball.vel.y === 0 && gameStart === true) {
                     this.velocity = INITIAL_VELOCITY
 
