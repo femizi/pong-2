@@ -12,7 +12,7 @@ function App() {
   return (
     <div className="App">
       
-      <Canvas gameStart={gameStart} gameStarter={gameStarter}/>
+      <Canvas />
     </div>
   )
 }

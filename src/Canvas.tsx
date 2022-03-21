@@ -2,14 +2,24 @@ import React, { useRef, useEffect, useState } from 'react'
 import Score from './Score'
 
 
-const Canvas = ({ gameStart, gameStarter }) => {
+const Canvas = () => {
+    const [gameReady, setGameReady] = useState(false)
+    const [gameStart, setgameStart] = useState(false)
     const testScore2 = useRef<HTMLDivElement>()
     const testScore1 = useRef<HTMLDivElement>()
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>()
     const VELOCITY_INCREASE = 0.00001
-    
-    
+    let message = {
+        name: 'connected',
+        count: 1,
+        keyPressed: 'none',
+        score: 0
+    }
+    function gameStarter() {
+        setGameReady(true)
+    }
+
     class Vector {
         y: number;
         x: number;
@@ -62,10 +72,7 @@ const Canvas = ({ gameStart, gameStarter }) => {
             this.vel = new Vector
         }
     }
-    let message = {
-        name:'connected',
-        count: 1
-    }
+
 
 
 
@@ -77,22 +84,17 @@ const Canvas = ({ gameStart, gameStarter }) => {
 
 
         let socket = new WebSocket("ws://localhost:8080/ws")
-        function writeMessage(message: string){
-            if (socket.readyState === 1){
-                socket.send(message)
-            }
-        }
+
         console.log('attempting websockets')
         socket.onopen = () => {
             console.log('succesfully connected')
-            socket.send(JSON.stringify(message))
+            gameReady ? socket.send(JSON.stringify(message)): ""
 
         }
         socket.onmessage = function (event) {
-            console.log(event.data)
-           randomX = parseInt(event.data)
-           randomY = parseInt(event.data)
-          }
+            console.log(event)
+
+        }
         socket.onclose = (e) => {
             console.log("socket closed connection: *", e)
         }
@@ -101,9 +103,14 @@ const Canvas = ({ gameStart, gameStarter }) => {
         }
         const VELOCITY_INCREASE = 0.00001
         const INITIAL_VELOCITY = 0.0045
-        
 
-
+        function writeMessage(message: object) {
+            if (socket.readyState === 1) {
+                socket.send(JSON.stringify(message))
+            }
+        }
+       
+       
         class Pong {
             _canvas: any;
             context: any;
@@ -144,7 +151,7 @@ const Canvas = ({ gameStart, gameStarter }) => {
 
             }
 
-            
+
             collide(player: Player, ball: Ball) {
                 if (player.left < ball.right && player.right > ball.left && player.top < ball.bottom && player.bottom > ball.top) {
                     ball.vel.x = - ball.vel.x
@@ -171,10 +178,7 @@ const Canvas = ({ gameStart, gameStarter }) => {
                 this.ball.pos.y = this._canvas.height / 2
                 this.ball.vel.x = 0
                 this.ball.vel.y = 0
-                if (socket.readyState == 1){
-                    socket.send('reset')
-                
-                }
+               
 
 
 
@@ -185,7 +189,7 @@ const Canvas = ({ gameStart, gameStarter }) => {
 
 
                     this.ball.vel.x = this.velocity * (randomX > .5 ? 1 : -1)
-                    this.ball.vel.y = this.velocity * (randomY * 2)
+                    this.ball.vel.y = this.velocity * (randomY * 4)
 
                     let floatHue = parseFloat(hue)
                     let rotatedHue = floatHue + delta * 0.01
@@ -217,7 +221,8 @@ const Canvas = ({ gameStart, gameStarter }) => {
                         testScore2.current.textContent = (parseInt(testScore2?.current?.textContent) + 1).toString()
                     }
                     this.players[playerId].score++
-
+                    message.name = "reset"
+                    writeMessage(message)
                     this.reset()
 
 
@@ -235,10 +240,30 @@ const Canvas = ({ gameStart, gameStarter }) => {
 
 
         const pong = new Pong(canvas)
-        function updatePaddleUp (index:number, value:number){
+        socket.onmessage = (e) => {
+            let data =JSON.parse(e.data)
+            
+            switch (data.name) {
+                case  "enough players":
+                    randomX = parseInt(data.randomness)
+                    randomY = parseInt(data.randomness)
+                    setgameStart(true)
+                   
+            case "Ball reset":
+                randomX = parseInt(data.randomness)
+                randomY = parseInt(data.randomness)
+                pong.players[0].pos.y= data.paddle1position
+                pong.players[1].pos.y= data.paddle2position
+            
+                default:
+                    console.log(data)
+                    console.log('error message')
+            }
+        }
+        function updatePaddleUp(index: number, value: number) {
             pong.players[index].pos.y -= value
         }
-        function updatePaddleDown(index:number, value: number){
+        function updatePaddleDown(index: number, value: number) {
             pong.players[index].pos.y += value
         }
 
@@ -252,7 +277,7 @@ const Canvas = ({ gameStart, gameStarter }) => {
 
             ) {
                 // player 2 paddle up
-                updatePaddleUp(1,20)
+                updatePaddleUp(1, 20)
 
             } else if (
                 event.keyCode === 40 && pong.players[1].bottom < pong._canvas.height
@@ -260,15 +285,15 @@ const Canvas = ({ gameStart, gameStarter }) => {
             ) {
                 // if down arrow is hit and at the bottom of the window
                 //    player 2 paddle down
-                updatePaddleDown(1,20)
+                updatePaddleDown(1, 20)
 
 
             } else if (event.keyCode === 87
                 && pong.players[0].top > 0) {
-                updatePaddleUp(0,20)
+                updatePaddleUp(0, 20)
 
             } else if (event.keyCode === 83 && pong.players[1].bottom < pong._canvas.height) {
-                updatePaddleDown(0,20)
+                updatePaddleDown(0, 20)
             }
         });
 
@@ -291,7 +316,7 @@ const Canvas = ({ gameStart, gameStarter }) => {
 
     return (
         <div className='container' ref={containerRef} >
-            {gameStart ? "" : <div className='instructions'><button onClick={() => gameStarter()}>Start Game</button></div>}
+            {gameReady ? <div className='instructions'><button >Ready</button></div> : <div className='instructions'><button onClick={() => gameStarter()}>Start Game</button></div>}
             <div className="score">
                 <div id="player-score" ref={testScore1} >0</div>
                 <div ref={testScore2} id="computer-score">0</div>
@@ -303,3 +328,4 @@ const Canvas = ({ gameStart, gameStarter }) => {
 
 
 export default Canvas
+
