@@ -88,7 +88,7 @@ const Canvas = () => {
         console.log('attempting websockets')
         socket.onopen = () => {
             console.log('succesfully connected')
-            gameReady ? socket.send(JSON.stringify(message)): ""
+            gameReady ? socket.send(JSON.stringify(message)) : ""
 
         }
         socket.onmessage = function (event) {
@@ -109,8 +109,8 @@ const Canvas = () => {
                 socket.send(JSON.stringify(message))
             }
         }
-       
-       
+
+
         class Pong {
             _canvas: any;
             context: any;
@@ -178,7 +178,7 @@ const Canvas = () => {
                 this.ball.pos.y = this._canvas.height / 2
                 this.ball.vel.x = 0
                 this.ball.vel.y = 0
-               
+
 
 
 
@@ -237,35 +237,52 @@ const Canvas = () => {
                 this.start(delta)
             }
         }
-
-
-        const pong = new Pong(canvas)
-        socket.onmessage = (e) => {
-            let data =JSON.parse(e.data)
-            
-            switch (data.name) {
-                case  "enough players":
-                    randomX = parseInt(data.randomness)
-                    randomY = parseInt(data.randomness)
-                    setgameStart(true)
-                   
-            case "Ball reset":
-                randomX = parseInt(data.randomness)
-                randomY = parseInt(data.randomness)
-                pong.players[0].pos.y= data.paddle1position
-                pong.players[1].pos.y= data.paddle2position
-            
-                default:
-                    console.log(data)
-                    console.log('error message')
-            }
-        }
         function updatePaddleUp(index: number, value: number) {
             pong.players[index].pos.y -= value
+           
         }
         function updatePaddleDown(index: number, value: number) {
             pong.players[index].pos.y += value
         }
+
+        let value = 0
+        const pong = new Pong(canvas)
+        socket.onmessage = (e) => {
+            setTimeout(() => {
+                updatePaddleUp(1,50)
+            }, 1000);
+            let data = JSON.parse(e.data)
+            if (data.name === "enough players") {
+                randomX = parseInt(data.randomness)
+                randomY = parseInt(data.randomness)
+                console.log(1)
+                setgameStart(true)
+            } else if (data.name === 'update Paddle1 up') {
+                value = data.paddle1position
+                pong.players[0].pos.y = 0
+                updatePaddleUp(1, value)
+                console.log(2)
+
+            } else if (data.name === "update Paddle1 down") {
+                value = data.paddle1position
+                updatePaddleDown(1, value)
+                console.log(3)
+               
+
+            } else if (data.name === "Ball reset") {
+                randomX = parseInt(data.randomness)
+                randomY = parseInt(data.randomness)
+                pong.players[0].pos.y = data.paddle1position
+                pong.players[1].pos.y = data.paddle2position
+            } else {
+                console.log(data)
+                console.log('error message')
+                console.log(5)
+
+            }
+
+        }
+
 
         console.log(pong)
 
@@ -290,20 +307,27 @@ const Canvas = () => {
 
             } else if (event.keyCode === 87
                 && pong.players[0].top > 0) {
-                updatePaddleUp(0, 20)
+                message.name = "key pressed w"
+                writeMessage(message)
+
+
 
             } else if (event.keyCode === 83 && pong.players[1].bottom < pong._canvas.height) {
-                updatePaddleDown(0, 20)
+                message.name = "key pressed s"
+                writeMessage(message)
             }
         });
 
+        setTimeout(() => {
+            updatePaddleUp(1,50)
+        }, 1000);
 
     }
 
 
 
     useEffect(() => {
-
+       
         const canvas = canvasRef.current;
         const context = canvas.getContext('2d');
         const container = containerRef.current
