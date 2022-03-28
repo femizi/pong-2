@@ -5,17 +5,20 @@ import Score from './Score'
 const Canvas = () => {
     const [gameReady, setGameReady] = useState(false)
     const [gameStart, setgameStart] = useState(false)
+    const [gamepaddleupdate, setgamepaddleupdate]  = useState(false)
     const testScore2 = useRef<HTMLDivElement>()
     const testScore1 = useRef<HTMLDivElement>()
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>()
     const VELOCITY_INCREASE = 0.00001
+    let paddle1position = 300
     let message = {
         name: 'connected',
         count: 1,
         keyPressed: 'none',
         score: 0
     }
+
     function gameStarter() {
         setGameReady(true)
     }
@@ -77,7 +80,7 @@ const Canvas = () => {
 
 
 
-    const draw = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, hue: string, saturation: string, container) => {
+    const draw = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, hue: string, saturation: string,  container) => {
         // ctx.globalAlpha = 0.5;
         let randomY = 0
         let randomX = 0
@@ -92,7 +95,7 @@ const Canvas = () => {
 
         }
         socket.onmessage = function (event) {
-            console.log(event)
+            console.log(event.data)
 
         }
         socket.onclose = (e) => {
@@ -103,7 +106,7 @@ const Canvas = () => {
         }
         const VELOCITY_INCREASE = 0.00001
         const INITIAL_VELOCITY = 0.0045
-
+// function that adds two numbers
         function writeMessage(message: object) {
             if (socket.readyState === 1) {
                 socket.send(JSON.stringify(message))
@@ -132,10 +135,9 @@ const Canvas = () => {
                 ]
                 this.players[0].pos.x = 40
                 this.players[1].pos.x = this._canvas.width - 40
-                this.players.forEach(players => {
-                    players.pos.y = 300
+                this.players[0].pos.y = 300
+                this.players[1].pos.y = 300
 
-                });
                 let lastTime: number
                 const callback = (mills?: number) => {
                     if (lastTime) {
@@ -239,35 +241,43 @@ const Canvas = () => {
         }
         function updatePaddleUp(index: number, value: number) {
             pong.players[index].pos.y -= value
-           
+
         }
         function updatePaddleDown(index: number, value: number) {
             pong.players[index].pos.y += value
         }
+        function hook( 
+        ) {
+            if (gamepaddleupdate === true){
+                updatePaddleUp(1,20)
+                setgamepaddleupdate(false)
+                console.count
+            }
+        }
 
         let value = 0
         const pong = new Pong(canvas)
-        socket.onmessage = (e) => {
-            setTimeout(() => {
-                updatePaddleUp(1,50)
-            }, 1000);
+
+
+
+        
+
+        socket.addEventListener("message", (e) => {
+
             let data = JSON.parse(e.data)
+            console.log(data.name)
             if (data.name === "enough players") {
                 randomX = parseInt(data.randomness)
                 randomY = parseInt(data.randomness)
-                console.log(1)
                 setgameStart(true)
             } else if (data.name === 'update Paddle1 up') {
-                value = data.paddle1position
-                pong.players[0].pos.y = 0
-                updatePaddleUp(1, value)
+                setgamepaddleupdate(true)
                 console.log(2)
 
             } else if (data.name === "update Paddle1 down") {
-                value = data.paddle1position
-                updatePaddleDown(1, value)
-                console.log(3)
-               
+                pong.players[0].pos.y=40
+              
+
 
             } else if (data.name === "Ball reset") {
                 randomX = parseInt(data.randomness)
@@ -282,7 +292,7 @@ const Canvas = () => {
             }
 
         }
-
+        )
 
         console.log(pong)
 
@@ -318,16 +328,13 @@ const Canvas = () => {
             }
         });
 
-        setTimeout(() => {
-            updatePaddleUp(1,50)
-        }, 1000);
-
+     
     }
 
 
 
     useEffect(() => {
-       
+
         const canvas = canvasRef.current;
         const context = canvas.getContext('2d');
         const container = containerRef.current
