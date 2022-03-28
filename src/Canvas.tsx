@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react'
-import Score from './Score'
+import Score from './Score'   
 
+let pong;
 
 const Canvas = () => {
     const [gameReady, setGameReady] = useState(false)
@@ -17,7 +18,12 @@ const Canvas = () => {
         count: 1,
         keyPressed: 'none',
         score: 0
-    }
+    }    
+    let socket = new WebSocket("ws://localhost:8080/ws"); 
+    socket.onopen = onopen;
+    //socket.onmessage = onmessage;
+    socket.onclose = onclose;
+    socket.onerror = onerror;
 
     function gameStarter() {
         setGameReady(true)
@@ -39,42 +45,7 @@ const Canvas = () => {
             this.y *= fact
         }
     }
-    class Rect {
-        pos: Vector;
-        size: Vector;
-        constructor(w: number, h: number) {
-            this.pos = new Vector
-            this.size = new Vector(w, h)
-        }
-        get left() {
-            return this.pos.x - this.size.x / 2
-        }
-        get right() {
-            return this.pos.x + this.size.x / 2
-        }
-        get top() {
-            return this.pos.y - this.size.y / 2
-        }
-        get bottom() {
-            return this.pos.y + this.size.y / 2
-        }
-    }
-    class Player extends Rect {
-        score: number;
-        constructor() {
-            super(20, 100)
-            this.score = 0
-
-        }
-    }
-    class Ball extends Rect {
-        vel: Vector;
-
-        constructor() {
-            super(10, 10)
-            this.vel = new Vector
-        }
-    }
+    
 
 
 
@@ -86,24 +57,7 @@ const Canvas = () => {
         let randomX = 0
 
 
-        let socket = new WebSocket("ws://localhost:8080/ws")
-
-        console.log('attempting websockets')
-        socket.onopen = () => {
-            console.log('succesfully connected')
-            gameReady ? socket.send(JSON.stringify(message)) : ""
-
-        }
-        socket.onmessage = function (event) {
-            console.log(event.data)
-
-        }
-        socket.onclose = (e) => {
-            console.log("socket closed connection: *", e)
-        }
-        socket.onerror = (e) => {
-            console.log('socket error', e)
-        }
+        
         const VELOCITY_INCREASE = 0.00001
         const INITIAL_VELOCITY = 0.0045
 // function that adds two numbers
@@ -114,7 +68,58 @@ const Canvas = () => {
         }
 
 
-        class Pong {
+        
+        function updatePaddleUp(index: number, value: number) {
+            pong.players[index].pos.y -= value
+
+        }
+        function updatePaddleDown(index: number, value: number) {
+            pong.players[index].pos.y += value
+        }
+        function hook( 
+        ) {
+            if (gamepaddleupdate === true){
+                updatePaddleUp(1,20)
+                setgamepaddleupdate(false)
+                console.count
+            }
+        }
+
+        let value = 0
+        //const pong = new Pong(canvas)
+        pong = new Pong(canvas);
+        console.log(pong)
+        container.addEventListener = onkeydown; 
+    }
+
+
+
+    useEffect(() => {
+
+        const canvas = canvasRef.current;
+        const context = canvas.getContext('2d');
+        const container = containerRef.current
+        canvas.width = 800
+        canvas.height = 600
+        let hue = "200"
+        let saturation = "50%"
+        draw(context, canvas, hue, saturation, container)
+        socket.onmessage = onmessage;
+    }, [])
+
+    return (
+        <div className='container' ref={containerRef} >
+            {gameReady ? <div className='instructions'><button >Ready</button></div> : <div className='instructions'><button onClick={() => gameStarter()}>Start Game</button></div>}
+            <div className="score">
+                <div id="player-score" ref={testScore1} >0</div>
+                <div ref={testScore2} id="computer-score">0</div>
+            </div>
+            <canvas tabIndex={0} ref={canvasRef} />
+        </div>
+    )
+}
+
+class Pong {
             _canvas: any;
             context: any;
             ball: Ball;
@@ -239,30 +244,8 @@ const Canvas = () => {
                 this.start(delta)
             }
         }
-        function updatePaddleUp(index: number, value: number) {
-            pong.players[index].pos.y -= value
 
-        }
-        function updatePaddleDown(index: number, value: number) {
-            pong.players[index].pos.y += value
-        }
-        function hook( 
-        ) {
-            if (gamepaddleupdate === true){
-                updatePaddleUp(1,20)
-                setgamepaddleupdate(false)
-                console.count
-            }
-        }
-
-        let value = 0
-        const pong = new Pong(canvas)
-
-
-
-        
-
-        socket.addEventListener("message", (e) => {
+const onmessage = e => {
 
             let data = JSON.parse(e.data)
             console.log(data.name)
@@ -294,9 +277,7 @@ const Canvas = () => {
         }
         )
 
-        console.log(pong)
-
-        container.addEventListener('keydown', event => {
+const onkeydown = event => {
             // if up arrow hit & top of paddle is below top header
             if (
                 event.keyCode === 38
@@ -328,34 +309,57 @@ const Canvas = () => {
             }
         });
 
-     
+class Rect {
+        pos: Vector;
+        size: Vector;
+        constructor(w: number, h: number) {
+            this.pos = new Vector
+            this.size = new Vector(w, h)
+        }
+        get left() {
+            return this.pos.x - this.size.x / 2
+        }
+        get right() {
+            return this.pos.x + this.size.x / 2
+        }
+        get top() {
+            return this.pos.y - this.size.y / 2
+        }
+        get bottom() {
+            return this.pos.y + this.size.y / 2
+        }
     }
+    class Player extends Rect {
+        score: number;
+        constructor() {
+            super(20, 100)
+            this.score = 0
 
+        }
+    }
+    class Ball extends Rect {
+        vel: Vector;
 
+        constructor() {
+            super(10, 10)
+            this.vel = new Vector
+        }
+    }
+const onopen  = () => {
+            console.log('succesfully connected')
+            gameReady ? socket.send(JSON.stringify(message)) : ""
 
-    useEffect(() => {
-
-        const canvas = canvasRef.current;
-        const context = canvas.getContext('2d');
-        const container = containerRef.current
-        canvas.width = 800
-        canvas.height = 600
-        let hue = "200"
-        let saturation = "50%"
-        draw(context, canvas, hue, saturation, container)
-    }, [draw])
-
-    return (
-        <div className='container' ref={containerRef} >
-            {gameReady ? <div className='instructions'><button >Ready</button></div> : <div className='instructions'><button onClick={() => gameStarter()}>Start Game</button></div>}
-            <div className="score">
-                <div id="player-score" ref={testScore1} >0</div>
-                <div ref={testScore2} id="computer-score">0</div>
-            </div>
-            <canvas tabIndex={0} ref={canvasRef} />
-        </div>
-    )
-}
+        };   
+/*const onmessage = () => (event) {
+            console.log(event.data)
+        }*/
+        
+const onclose = (e) => {
+            console.log("socket closed connection: *", e)
+        }
+const onerror = (e) => {
+            console.log('socket error', e)
+        }
 
 
 export default Canvas
